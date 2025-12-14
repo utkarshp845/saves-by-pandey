@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { SPOTSAVE_AWS_ACCOUNT_ID, CF_CONSOLE_URL, CF_TEMPLATE_BODY, STACK_NAME } from '../constants';
+import { CF_CONSOLE_URL, CF_TEMPLATE_BODY, STACK_NAME } from '../constants';
 import { CloudShellScript } from './CloudShellScript';
 
 interface ConnectionWizardProps {
@@ -159,7 +160,7 @@ export const ConnectionWizard: React.FC<ConnectionWizardProps> = ({ externalId, 
                   type="text"
                   id="roleArn"
                   placeholder="arn:aws:iam::123456789012:role/..."
-                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 placeholder-slate-400 shadow-sm"
+                  className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm bg-white text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 placeholder-slate-400 shadow-sm"
                   value={roleArn}
                   onChange={(e) => setRoleArn(e.target.value)}
                   disabled={isLoading}

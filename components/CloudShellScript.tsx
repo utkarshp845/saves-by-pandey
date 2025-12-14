@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { SPOTSAVE_AWS_ACCOUNT_ID, CF_TEMPLATE_BODY, STACK_NAME } from '../constants';
+import { CF_TEMPLATE_BODY, STACK_NAME } from '../constants';
 
 interface CloudShellScriptProps {
   externalId: string;
@@ -17,7 +18,7 @@ EOF
 aws cloudformation create-stack \\
   --stack-name ${STACK_NAME} \\
   --template-body file://spotsave-role.yaml \\
-  --parameters ParameterKey=ExternalId,ParameterValue=${externalId} ParameterKey=SpotSaveAccountId,ParameterValue=${SPOTSAVE_AWS_ACCOUNT_ID} \\
+  --parameters ParameterKey=ExternalId,ParameterValue=${externalId} \\
   --capabilities CAPABILITY_NAMED_IAM
 
 # Wait for creation (optional)
