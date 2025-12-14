@@ -4,6 +4,7 @@ import { SecurityExplanation } from './components/SecurityExplanation';
 import { LandingPage } from './components/LandingPage';
 import { DemoDashboard } from './components/DemoDashboard';
 import { Alert } from './components/Alert';
+import { db } from './lib/supabase';
 
 type ViewState = 'landing' | 'wizard' | 'demo';
 
@@ -31,22 +32,42 @@ const App: React.FC = () => {
   
   // In a real app, this comes from your Auth Provider / Backend API
   const [externalId, setExternalId] = useState<string>(''); 
+  const [sessionId, setSessionId] = useState<string>('');
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<AppError | null>(null);
 
   useEffect(() => {
-    // Simulate fetching the generated External ID from backend
+    // Fetch or create session from Supabase (with fallback)
     const initSession = async () => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 800)); // Slightly longer to show smooth loading
-        setExternalId('550e8400-e29b-41d4-a716-446655440000');
-      } catch (err) {
-        setFeedback({
-          type: 'error',
-          title: 'Initialization Failed',
-          message: 'Could not generate secure handshake. Please refresh the page.'
-        });
+        setLoading(true);
+        const { externalId: id, sessionId: sid } = await db.createOrGetSession();
+        setExternalId(id);
+        setSessionId(sid);
+      } catch (err: any) {
+        console.error('Session initialization error:', err);
+        // Even if there's an error, try to use localStorage fallback
+        try {
+          const fallbackId = localStorage.getItem('spotsave_external_id') || crypto.randomUUID();
+          const fallbackSessionId = localStorage.getItem('spotsave_session_id') || crypto.randomUUID();
+          setExternalId(fallbackId);
+          setSessionId(fallbackSessionId);
+          // Store for next time
+          if (!localStorage.getItem('spotsave_external_id')) {
+            localStorage.setItem('spotsave_external_id', fallbackId);
+            localStorage.setItem('spotsave_session_id', fallbackSessionId);
+          }
+        } catch (storageErr) {
+          // If localStorage also fails, just generate new IDs
+          const fallbackId = crypto.randomUUID();
+          const fallbackSessionId = crypto.randomUUID();
+          setExternalId(fallbackId);
+          setSessionId(fallbackSessionId);
+        }
+        // Don't show error to user - app should still work
+      } finally {
+        setLoading(false);
       }
     };
     initSession();
@@ -80,6 +101,16 @@ const App: React.FC = () => {
           resolve(true);
         }, 2000);
       });
+
+      // Store role ARN in database
+      if (sessionId) {
+        try {
+          await db.updateSessionRole(sessionId, roleArn);
+        } catch (dbError) {
+          console.warn('Failed to save role ARN to database:', dbError);
+          // Continue anyway - connection is still successful
+        }
+      }
 
       // Success
       setIsConnected(true);
