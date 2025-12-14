@@ -3,8 +3,15 @@ import { ConnectionWizard } from './components/ConnectionWizard';
 import { SecurityExplanation } from './components/SecurityExplanation';
 import { LandingPage } from './components/LandingPage';
 import { DemoDashboard } from './components/DemoDashboard';
+import { Alert } from './components/Alert';
 
 type ViewState = 'landing' | 'wizard' | 'demo';
+
+interface AppError {
+  type: 'error' | 'warning' | 'success';
+  title: string;
+  message: string;
+}
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('landing');
@@ -13,24 +20,87 @@ const App: React.FC = () => {
   const [externalId, setExternalId] = useState<string>(''); 
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState<AppError | null>(null);
 
   useEffect(() => {
     // Simulate fetching the generated External ID from backend
-    setTimeout(() => {
-      setExternalId('550e8400-e29b-41d4-a716-446655440000');
-    }, 500);
+    // Added try/catch for initial load simulation
+    const initSession = async () => {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setExternalId('550e8400-e29b-41d4-a716-446655440000');
+      } catch (err) {
+        setFeedback({
+          type: 'error',
+          title: 'Initialization Failed',
+          message: 'Could not generate secure handshake. Please refresh the page.'
+        });
+      }
+    };
+    initSession();
   }, []);
 
   const handleConnect = async (roleArn: string) => {
     setLoading(true);
-    // Simulate Backend API Call to verify ARN
-    console.log(`Verifying ${roleArn} with External ID ${externalId}...`);
-    
-    setTimeout(() => {
+    setFeedback(null);
+
+    try {
+      // 1. Validation Phase
+      if (!roleArn.startsWith('arn:aws:iam::')) {
+        throw new Error("Invalid ARN format. Must start with 'arn:aws:iam::'.");
+      }
+      
+      const accountId = roleArn.split(':')[4];
+      if (!accountId || accountId.length !== 12 || isNaN(Number(accountId))) {
+         throw new Error("Invalid AWS Account ID in ARN. Must be 12 digits.");
+      }
+
+      console.log(`Verifying ${roleArn} with External ID ${externalId}...`);
+      
+      // 2. Network/API Phase (Simulated)
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          // Randomly simulate a network failure for demonstration (10% chance)
+          if (Math.random() < 0.1) {
+             reject(new Error("Network timeout: Could not reach AWS STS service."));
+             return;
+          }
+          resolve(true);
+        }, 2000);
+      });
+
+      // Success
       setLoading(false);
       setIsConnected(true);
-      setView('demo'); // Redirect to dashboard on success (mock)
-    }, 2000);
+      setFeedback({
+        type: 'success',
+        title: 'Connection Successful',
+        message: 'Redirecting to your analysis dashboard...'
+      });
+      
+      setTimeout(() => {
+        setView('demo');
+        setFeedback(null); // Clear success message after transition
+      }, 1500);
+
+    } catch (err: any) {
+      setLoading(false);
+      console.error("Connection Error:", err);
+      
+      // Categorize errors
+      let errorMessage = "An unexpected error occurred.";
+      let errorTitle = "Connection Failed";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setFeedback({
+        type: 'error',
+        title: errorTitle,
+        message: errorMessage
+      });
+    }
   };
 
   const renderContent = () => {
@@ -42,14 +112,17 @@ const App: React.FC = () => {
         return <DemoDashboard onConnect={() => setView('wizard')} isConnected={isConnected} />;
 
       case 'wizard':
-        if (!externalId) {
+        if (!externalId && !feedback) {
           return <div className="min-h-[50vh] flex items-center justify-center text-emerald-600 font-medium animate-pulse">Initializing secure handshake...</div>;
         }
         return (
           <div className="max-w-7xl mx-auto grid lg:grid-cols-3 gap-12 items-start py-12 px-4">
              <div className="lg:col-span-3 mb-4">
                 <button 
-                  onClick={() => setView('landing')}
+                  onClick={() => {
+                    setView('landing');
+                    setFeedback(null);
+                  }}
                   className="group flex items-center text-slate-500 hover:text-emerald-600 font-medium transition-colors"
                 >
                   <div className="bg-white border border-slate-200 rounded-full p-1 mr-2 group-hover:border-emerald-200 group-hover:bg-emerald-50 transition-all">
@@ -61,7 +134,16 @@ const App: React.FC = () => {
                 </button>
              </div>
 
-             <div className="lg:col-span-2 space-y-8">
+             <div className="lg:col-span-2 space-y-6">
+                {feedback && (
+                  <Alert 
+                    type={feedback.type} 
+                    title={feedback.title} 
+                    message={feedback.message} 
+                    onClose={() => setFeedback(null)} 
+                  />
+                )}
+               
                <ConnectionWizard 
                   externalId={externalId} 
                   onConnect={handleConnect}

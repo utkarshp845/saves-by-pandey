@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SPOTSAVE_AWS_ACCOUNT_ID, CF_TEMPLATE_URL, STACK_NAME } from '../constants';
+import { SPOTSAVE_AWS_ACCOUNT_ID, CF_CONSOLE_URL, CF_TEMPLATE_BODY, STACK_NAME } from '../constants';
 import { CloudShellScript } from './CloudShellScript';
 
 interface ConnectionWizardProps {
@@ -13,15 +13,16 @@ export const ConnectionWizard: React.FC<ConnectionWizardProps> = ({ externalId, 
   const [error, setError] = useState<string | null>(null);
   const [method, setMethod] = useState<'cloudformation' | 'cli'>('cloudformation');
 
-  const getLaunchStackUrl = () => {
-    const baseUrl = "https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review";
-    const params = new URLSearchParams({
-      templateURL: CF_TEMPLATE_URL,
-      stackName: STACK_NAME,
-      param_ExternalId: externalId,
-      param_SpotSaveAccountId: SPOTSAVE_AWS_ACCOUNT_ID
-    });
-    return `${baseUrl}?${params.toString()}`;
+  const handleDownloadTemplate = () => {
+    const blob = new Blob([CF_TEMPLATE_BODY], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'saves-integration.yaml';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +50,7 @@ export const ConnectionWizard: React.FC<ConnectionWizardProps> = ({ externalId, 
             onClick={() => setMethod('cloudformation')}
             className={`px-4 py-2 text-sm font-bold border-b-2 transition-colors ${method === 'cloudformation' ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
           >
-            CloudFormation (Recommended)
+            CloudFormation (Manual)
           </button>
           <button
             onClick={() => setMethod('cli')}
@@ -89,25 +90,40 @@ export const ConnectionWizard: React.FC<ConnectionWizardProps> = ({ externalId, 
             <h3 className="font-bold text-slate-900">Create Access Role</h3>
             
             {method === 'cloudformation' ? (
-              <>
+              <div className="space-y-4">
                 <p className="text-sm text-slate-600">
-                  Launch the pre-configured stack. It creates a read-only role for Saves.
+                  Download the template and upload it to the AWS Console.
                 </p>
-                <div className="mt-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button 
+                    onClick={handleDownloadTemplate}
+                    className="flex-1 inline-flex items-center justify-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-2.5 px-4 rounded-lg shadow-sm transition-all"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M12 12.75l-3-3m0 0 3-3m-3 3h15" transform="rotate(-90 12 12)" />
+                    </svg>
+                    Download Template
+                  </button>
                   <a 
-                    href={getLaunchStackUrl()} 
+                    href={CF_CONSOLE_URL}
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-bold py-2.5 px-5 rounded-lg shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5"
+                    className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-lg shadow-md hover:shadow-lg transition-all"
                   >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12.923 15.36c.49-.675.76-1.5.76-2.39 0-2.3-1.78-4.14-4-4.14s-4 1.84-4 4.14c0 2.3 1.78 4.14 4 4.14.39 0 .78-.05 1.14-.16l2.1 2.58v-4.17zM9.683 15.2c-1.2 0-2.18-.99-2.18-2.22s.98-2.22 2.18-2.22 2.18.99 2.18 2.22-.98 2.22-2.18 2.22zM19.463 8.68l-4.5-5.32a.98.98 0 00-.77-.36H3.773c-.55 0-1 .45-1 1v16c0 .55.45 1 1 1h16.44c.55 0 1-.45 1-1V9.45a.99.99 0 00-.25-.77zm-1.25 10.32H5.773v-14h8.21v4.22h4.23v9.78z"/>
-                    </svg>
-                    Launch Stack
+                    Open Console &rarr;
                   </a>
-                  <p className="text-xs text-slate-400 mt-2 font-medium">Opens AWS Console • Takes ~30s</p>
                 </div>
-              </>
+                <div className="text-xs text-slate-500 bg-slate-50 p-3 rounded border border-slate-100">
+                  <strong>Instructions:</strong>
+                  <ol className="list-decimal ml-4 mt-1 space-y-1">
+                    <li>Click <strong>Download Template</strong> to save the YAML file.</li>
+                    <li>Click <strong>Open Console</strong> to visit AWS CloudFormation.</li>
+                    <li>Select <strong>"Upload a template file"</strong> and choose the file.</li>
+                    <li>Enter Stack Name: <code>{STACK_NAME}</code></li>
+                    <li>Paste External ID: <code>{externalId}</code></li>
+                  </ol>
+                </div>
+              </div>
             ) : (
               <>
                  <p className="text-sm text-slate-600">

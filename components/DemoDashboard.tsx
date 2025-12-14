@@ -30,6 +30,19 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({ onConnect, isConne
   const [timeRange, setTimeRange] = useState('6M');
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Defensive Check: Ensure data exists before rendering
+  if (!SAVINGS_DATA || SAVINGS_DATA.length === 0) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-slate-50">
+            <div className="text-center">
+                <h3 className="text-xl font-bold text-slate-800">No Data Available</h3>
+                <p className="text-slate-500">Could not load visualization data.</p>
+                <button onClick={() => window.location.reload()} className="mt-4 text-emerald-600 underline">Retry</button>
+            </div>
+        </div>
+    );
+  }
+
   // If connected, we might show "real" data (simulated for now)
   const displayData = SAVINGS_DATA; 
 
@@ -37,17 +50,21 @@ export const DemoDashboard: React.FC<DemoDashboardProps> = ({ onConnect, isConne
   const optimizationScore = 64;
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-slate-900 text-white p-3 rounded-lg shadow-xl border border-slate-700 text-xs">
-          <p className="font-bold mb-1">{label}</p>
-          <p className="text-emerald-400">Optimized: ${payload[0].value}</p>
-          <p className="text-slate-400">Actual: ${payload[1].value}</p>
-          <p className="mt-1 pt-1 border-t border-slate-700 font-bold text-amber-400">
-            Waste: ${payload[1].value - payload[0].value}
-          </p>
-        </div>
-      );
+    try {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-slate-900 text-white p-3 rounded-lg shadow-xl border border-slate-700 text-xs">
+                <p className="font-bold mb-1">{label}</p>
+                <p className="text-emerald-400">Optimized: ${payload[0]?.value}</p>
+                <p className="text-slate-400">Actual: ${payload[1]?.value}</p>
+                <p className="mt-1 pt-1 border-t border-slate-700 font-bold text-amber-400">
+                    Waste: ${(payload[1]?.value || 0) - (payload[0]?.value || 0)}
+                </p>
+                </div>
+            );
+        }
+    } catch (e) {
+        console.warn("Tooltip render error", e);
     }
     return null;
   };

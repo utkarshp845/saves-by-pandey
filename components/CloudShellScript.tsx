@@ -1,16 +1,22 @@
 import React from 'react';
-import { SPOTSAVE_AWS_ACCOUNT_ID, CF_TEMPLATE_URL, STACK_NAME } from '../constants';
+import { SPOTSAVE_AWS_ACCOUNT_ID, CF_TEMPLATE_BODY, STACK_NAME } from '../constants';
 
 interface CloudShellScriptProps {
   externalId: string;
 }
 
 export const CloudShellScript: React.FC<CloudShellScriptProps> = ({ externalId }) => {
+  // Use heredoc to create the file locally in cloudshell
   const script = `
+# Create the template file
+cat << 'EOF' > spotsave-role.yaml
+${CF_TEMPLATE_BODY}
+EOF
+
 # Create the Stack
 aws cloudformation create-stack \\
   --stack-name ${STACK_NAME} \\
-  --template-url ${CF_TEMPLATE_URL} \\
+  --template-body file://spotsave-role.yaml \\
   --parameters ParameterKey=ExternalId,ParameterValue=${externalId} ParameterKey=SpotSaveAccountId,ParameterValue=${SPOTSAVE_AWS_ACCOUNT_ID} \\
   --capabilities CAPABILITY_NAMED_IAM
 
