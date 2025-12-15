@@ -3,10 +3,10 @@ import { ConnectionWizard } from './components/ConnectionWizard';
 import { SecurityExplanation } from './components/SecurityExplanation';
 import { LandingPage } from './components/LandingPage';
 import { DemoDashboard } from './components/DemoDashboard';
+import { Dashboard } from './components/Dashboard';
 import { Alert } from './components/Alert';
-import { db } from './lib/supabase';
 
-type ViewState = 'landing' | 'wizard' | 'demo';
+type ViewState = 'landing' | 'wizard' | 'demo' | 'dashboard';
 
 interface AppError {
   type: 'error' | 'warning' | 'success';
@@ -32,42 +32,22 @@ const App: React.FC = () => {
   
   // In a real app, this comes from your Auth Provider / Backend API
   const [externalId, setExternalId] = useState<string>(''); 
-  const [sessionId, setSessionId] = useState<string>('');
-  const [isConnected, setIsConnected] = useState(false);
+  const [connectedRoleArn, setConnectedRoleArn] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<AppError | null>(null);
 
   useEffect(() => {
-    // Fetch or create session from Supabase (with fallback)
+    // Simulate fetching the generated External ID from backend
     const initSession = async () => {
       try {
-        setLoading(true);
-        const { externalId: id, sessionId: sid } = await db.createOrGetSession();
-        setExternalId(id);
-        setSessionId(sid);
-      } catch (err: any) {
-        console.error('Session initialization error:', err);
-        // Even if there's an error, try to use localStorage fallback
-        try {
-          const fallbackId = localStorage.getItem('spotsave_external_id') || crypto.randomUUID();
-          const fallbackSessionId = localStorage.getItem('spotsave_session_id') || crypto.randomUUID();
-          setExternalId(fallbackId);
-          setSessionId(fallbackSessionId);
-          // Store for next time
-          if (!localStorage.getItem('spotsave_external_id')) {
-            localStorage.setItem('spotsave_external_id', fallbackId);
-            localStorage.setItem('spotsave_session_id', fallbackSessionId);
-          }
-        } catch (storageErr) {
-          // If localStorage also fails, just generate new IDs
-          const fallbackId = crypto.randomUUID();
-          const fallbackSessionId = crypto.randomUUID();
-          setExternalId(fallbackId);
-          setSessionId(fallbackSessionId);
-        }
-        // Don't show error to user - app should still work
-      } finally {
-        setLoading(false);
+        await new Promise(resolve => setTimeout(resolve, 800)); // Slightly longer to show smooth loading
+        setExternalId('550e8400-e29b-41d4-a716-446655440000');
+      } catch (err) {
+        setFeedback({
+          type: 'error',
+          title: 'Initialization Failed',
+          message: 'Could not generate secure handshake. Please refresh the page.'
+        });
       }
     };
     initSession();
@@ -102,18 +82,8 @@ const App: React.FC = () => {
         }, 2000);
       });
 
-      // Store role ARN in database
-      if (sessionId) {
-        try {
-          await db.updateSessionRole(sessionId, roleArn);
-        } catch (dbError) {
-          console.warn('Failed to save role ARN to database:', dbError);
-          // Continue anyway - connection is still successful
-        }
-      }
-
       // Success
-      setIsConnected(true);
+      setConnectedRoleArn(roleArn);
       setFeedback({
         type: 'success',
         title: 'Connection Successful',
@@ -122,7 +92,7 @@ const App: React.FC = () => {
       
       setTimeout(() => {
         setLoading(false);
-        setView('demo');
+        setView('dashboard');
         setFeedback(null); // Clear success message after transition
       }, 1500);
 
@@ -146,13 +116,27 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDisconnect = () => {
+    setConnectedRoleArn('');
+    setView('landing');
+    setFeedback({
+      type: 'info',
+      title: 'Disconnected',
+      message: 'You have securely disconnected your account.'
+    });
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
   const renderContent = () => {
     switch (view) {
       case 'landing':
         return <LandingPage onStart={() => setView('wizard')} onDemo={() => setView('demo')} />;
       
       case 'demo':
-        return <DemoDashboard onConnect={() => setView('wizard')} isConnected={isConnected} />;
+        return <DemoDashboard onConnect={() => setView('wizard')} />;
+
+      case 'dashboard':
+        return <Dashboard roleArn={connectedRoleArn} onDisconnect={handleDisconnect} />;
 
       case 'wizard':
         if (!externalId && !feedback) {
@@ -225,12 +209,21 @@ const App: React.FC = () => {
               >
                 Live Demo
               </button>
-              <button 
-                onClick={() => setView('wizard')}
-                className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-full text-sm font-bold transition-all shadow-lg shadow-slate-200 hover:shadow-slate-300 transform hover:-translate-y-0.5"
-              >
-                Start Saving
-              </button>
+              {view === 'dashboard' ? (
+                 <button 
+                   onClick={handleDisconnect}
+                   className="text-sm font-medium text-red-600 hover:text-red-700 px-3 py-1.5"
+                 >
+                   Disconnect
+                 </button>
+              ) : (
+                <button 
+                  onClick={() => setView('wizard')}
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-2 rounded-full text-sm font-bold transition-all shadow-lg shadow-slate-200 hover:shadow-slate-300 transform hover:-translate-y-0.5"
+                >
+                  Start Saving
+                </button>
+              )}
             </div>
           </div>
         </div>

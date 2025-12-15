@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="SpotSave helps you save 50% on AWS bills in 5 minutes with secure, read-only analysis. No agents, no credentials shared." />
-    <title>Saves by Pandey Solutions</title>
+    <title>SpotSave - Cloud Cost Intelligence</title>
     
     <!-- Performance: Preconnect to external domains -->
     <link rel="preconnect" href="https://cdn.tailwindcss.com" />
@@ -51,7 +51,20 @@
         100% { transform: translateX(100%); }
       }
     </style>
-    <script type="module" src="/index.tsx"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "uuid": "https://esm.sh/uuid@10.0.0",
+    "@aws-sdk/client-sts": "https://esm.sh/@aws-sdk/client-sts@3.637.0",
+    "@aws-sdk/client-cost-explorer": "https://esm.sh/@aws-sdk/client-cost-explorer@3.637.0",
+    "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom"
+  }
+}
+</script>
 </head>
   <body class="bg-slate-50 text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900">
     <div id="root"></div>

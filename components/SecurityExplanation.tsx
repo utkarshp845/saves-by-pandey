@@ -36,12 +36,7 @@ export const SecurityExplanation: React.FC = () => {
         </li>
       </ul>
       <div className="pt-4 border-t border-slate-100">
-        <a 
-          href="https://github.com/utkarshp845/saves-by-pandey/blob/main/infrastructure/cloudformation.yaml" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="text-emerald-600 text-sm font-medium hover:underline flex items-center gap-1"
-        >
+        <a href="#" className="text-emerald-600 text-sm font-medium hover:underline flex items-center gap-1">
           View CloudFormation Template on GitHub
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
             <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 18h-8.5A2.25 2.25 0 0 1 2 15.75v-8.5A2.25 2.25 0 0 1 4.25 5h4a.75.75 0 0 1 0 1.5h-4Z" clipRule="evenodd" />
